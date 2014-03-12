@@ -34,11 +34,11 @@ data BayesianGraph = BayesianGraph
 data StoVar = StoVar
   { stoVarName    :: StoVarName
   , stoVarPrior   :: PriorInfo
-  , stoPostDistLL :: !(M.Map Expr Expr)
+  , stoPostDistLogDensity :: !(M.Map Expr Expr)
     -- ^ Maps terms that mention the variable to their coefficients,
     -- which do not depend on the variable.  The term for the
     -- distribution is the sum of the products of the map elements
-    -- (see 'stoPostLL').
+    -- (see 'stoPostLogDensity').
   } deriving Show
 
 -- | The name of a stochastic variable.
@@ -50,26 +50,26 @@ data StoVarName
 
 -- | Information about the prior distribution of a stochastic variable.
 data PriorInfo = PriorInfo
-  { priName     :: String
-  , priParams   :: [Term NodeIdx]
-  , priSupport  :: DistSupport NodeIdx
-  , priLL       :: Term NodeIdx
+  { priorName     :: String
+  , priorParams   :: [Term NodeIdx]
+  , priorSupport  :: DistSupport NodeIdx
+  , priorLogDensity       :: Term NodeIdx
   } deriving Show
 
 
 -- | The description of an atomic distribution.
-data Distribution = Distribution
-  { distName    :: String
-  , distParams  :: [Expr]
-  , distSupport :: DistSupport NodeIdx
-  , distLL      :: Expr -> Expr
+data Measure = MeasureMeasure
+  { measureName    :: String
+  , measureParams  :: [Expr]
+  , measureSupport :: DistSupport NodeIdx
+  , measureLogDensity      :: Expr -> Expr
   }
 
 
 -- | Support of a distribution
-data DistSupport a
+data MeasureSupport a
   = Real
-  | Discrete (Maybe (Term a))     -- upper bound, from 0 to this number
+  | Count (Maybe (Term a))     -- upper bound, from 0 to this number
   | PosReal
   | Interval (Term a) (Term a)    -- lower/upper
     deriving (Show,Functor)
@@ -133,7 +133,7 @@ getState :: BayesianNetwork ASTState
 getState = BayesianNetwork get
 
 
-using :: Distribution -> BayesianNetwork Expr
+using :: Measure -> BayesianNetwork Expr
 using d = updateState $ \st ->
   let i  = curIdx st
   in ( tvar i
@@ -142,19 +142,19 @@ using d = updateState $ \st ->
           }
      )
 
-toStoVar :: NodeIdx -> Distribution -> StoVar
+toStoVar :: NodeIdx -> Measure -> StoVar
 toStoVar i d = StoVar
   { stoVarName  = Unnamed i
   , stoVarPrior = PriorInfo
-      { priName     = distName d
-      , priParams   = distParams d
-      , priSupport  = distSupport d
-      , priLL       = distLL d (tvar i)
+      { priorName     = measureName d
+      , priorParams   = measureParams d
+      , priorSupport  = measureSupport d
+      , priorLogDensity       = measureLogDensity d (tvar i)
       }
-  , stoPostDistLL   = M.empty
+  , stoPostDistLogDensity   = M.empty
   }
 
--- NOTE: The posterior LLs are not yet computed in the graph that's returned.
+-- NOTE: The posterior LogDensitys are not yet computed in the graph that's returned.
 extractNetwork :: BayesianNetwork a -> (a, BayesianGraph)
 extractNetwork (BayesianNetwork m) =
   ( a

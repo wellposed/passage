@@ -49,7 +49,7 @@ buildBayesianGraph nw = (a, computeLL g)
 -- | Compute the log-likelihood for a stochastic variable.
 computeLL :: BayesianGraph -> BayesianGraph
 computeLL bg = foldl' addDef bg (IM.elems (stoNodes bg))
-  where addDef m sv   = foldl' addSum m (summands (priLL (stoVarPrior sv)))
+  where addDef m sv   = foldl' addSum m (summands (priorLL (stoVarPrior sv)))
         addSum m t    = IS.fold (\i m1 -> addToStoLL i t m1) m
                                             (leavesOfTerm (fvsArray bg) t)
 
