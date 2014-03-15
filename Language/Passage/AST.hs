@@ -58,7 +58,7 @@ data PriorInfo = PriorInfo
 
 
 -- | The description of an atomic distribution.
-data Measure = MeasureMeasure
+data Measure = Measure
   { measureName    :: String
   , measureParams  :: [Expr]
   , measureSupport :: DistSupport NodeIdx
